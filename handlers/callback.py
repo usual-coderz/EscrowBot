@@ -1,6 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery
-
+from pyrogram.enums import ParseMode
 from database import admins, trades
 
 import random
@@ -155,7 +155,7 @@ async def fee_callback(client, callback_query: CallbackQuery):
 <emoji id="5931628549088744687">📞</emoji>
 <b>Escrowed By:</b> {settings.get("username", "-")}
 """,
-        parse_mode="html"
+        parse_mode=ParseMode.HTML
     )
 
 
