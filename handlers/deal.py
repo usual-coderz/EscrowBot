@@ -1,39 +1,48 @@
 from pyrogram import Client, filters
 
-waiting = {}
+# Sirf un users ke liye jo /dd use kar chuke hain
+waiting = set()
+
 
 @Client.on_message(filters.command("dd"))
 async def new_deal(client, message):
 
-    waiting[message.from_user.id] = True
+    waiting.add(message.from_user.id)
 
     await message.reply(
-"""Reply with:
+        """Reply with:
 
 DEAL INFO:
 BUYER:
 SELLER:
 DEAL AMOUNT:
 TIME TO COMPLETE DEAL:
-"""
+""",
+        quote=True
     )
 
 
-@Client.on_message(filters.reply)
-async def form(client, message):
+@Client.on_message(filters.reply & filters.text)
+async def deal_form(client, message):
 
+    # Sirf wahi user jo /dd use kar chuka hai
     if message.from_user.id not in waiting:
         return
 
-    waiting.pop(message.from_user.id)
+    replied = message.reply_to_message
 
-    text = message.text
+    # Bot ke form ka hi reply hona chahiye
+    if not replied or "Reply with:" not in replied.text:
+        return
+
+    waiting.remove(message.from_user.id)
 
     await message.reply(
-f"""✅ Deal Request Sent
+        f"""✅ Deal Request Sent
 
-{text}
+{message.text}
 
-Waiting For Escrow Admin Approval...
-"""
+⏳ Waiting For Escrow Admin Approval...
+""",
+        quote=True
     )
