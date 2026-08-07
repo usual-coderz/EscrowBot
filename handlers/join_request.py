@@ -1,5 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import ChatJoinRequest
+from pyrogram.enums import ChatMemberStatus
+
 from database import settings
 
 WELCOME = """Hey 👋
@@ -18,7 +20,7 @@ Stay safe and enjoy secure trading.
 """
 
 
-@Client.on_message(filters.command("autoapprove"))
+@Client.on_message(filters.command("autoapprove") & filters.group)
 async def autoapprove(client, message):
 
     member = await client.get_chat_member(
@@ -26,7 +28,10 @@ async def autoapprove(client, message):
         message.from_user.id
     )
 
-    if member.status not in ("administrator", "owner"):
+    if member.status not in (
+        ChatMemberStatus.OWNER,
+        ChatMemberStatus.ADMINISTRATOR
+    ):
         return await message.reply(
             "Only group admins can use this command."
         )
@@ -40,9 +45,11 @@ async def autoapprove(client, message):
 
     mode = message.command[1].lower()
 
-    if mode not in ["on", "off"]:
+    if mode not in ("on", "off"):
         return await message.reply(
-            "Use: on/off"
+            "Use:\n"
+            "/autoapprove on\n"
+            "/autoapprove off"
         )
 
     enabled = mode == "on"
@@ -70,7 +77,10 @@ async def auto_accept(client, join_request: ChatJoinRequest):
         {"chat_id": join_request.chat.id}
     )
 
-    if not config or not config.get("autoapprove", False):
+    if not config:
+        return
+
+    if not config.get("autoapprove", False):
         return
 
     try:
@@ -81,7 +91,7 @@ async def auto_accept(client, join_request: ChatJoinRequest):
                 join_request.from_user.id,
                 WELCOME
             )
-        except Exception:
+        except:
             pass
 
     except Exception as e:
