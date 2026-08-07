@@ -5,53 +5,77 @@ import string
 
 
 def trade_id():
-    return "#TID" + "".join(random.choices(string.ascii_uppercase, k=6))
+    return "#TID" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 
 @Client.on_message(filters.reply & filters.text)
 async def approve_deal(client, message):
 
-    replied = message.reply_to_message
-
-    if not replied or not replied.text:
-        return
-
+    # Admin ki settings
     admin = await admins.find_one({"chat_id": message.chat.id})
     if not admin:
         return
 
-    # Sirf configured admin approve kar sakta hai
+    # Reply message hona chahiye
+    if not message.reply_to_message:
+        return
+
+    replied = message.reply_to_message
+
+    # Sirf configured admin
     if message.from_user.username != admin["username"].replace("@", ""):
         return
 
-    # Sirf configured approve word
-    if message.text.strip() != admin["approve"]:
+    # Sirf approve word
+    if message.text.strip().upper() != admin["approve"].strip().upper():
         return
 
-    # Reply kiya gaya message deal form hona chahiye
+    # Deal form verify
     if "DEAL INFO:" not in replied.text:
         return
 
-    lines = replied.text.splitlines()
+    buyer = ""
+    seller = ""
+    amount = ""
+    deal_info = ""
+    time = ""
 
-    buyer = lines[1].replace("BUYER:", "").strip()
-    seller = lines[2].replace("SELLER:", "").strip()
-    amount = lines[3].replace("DEAL AMOUNT:", "").strip()
+    for line in replied.text.splitlines():
+
+        line = line.strip()
+
+        if line.startswith("DEAL INFO:"):
+            deal_info = line.replace("DEAL INFO:", "").strip()
+
+        elif line.startswith("BUYER:"):
+            buyer = line.replace("BUYER:", "").strip()
+
+        elif line.startswith("SELLER:"):
+            seller = line.replace("SELLER:", "").strip()
+
+        elif line.startswith("DEAL AMOUNT:"):
+            amount = line.replace("DEAL AMOUNT:", "").strip()
+
+        elif line.startswith("TIME TO COMPLETE DEAL:"):
+            time = line.replace("TIME TO COMPLETE DEAL:", "").strip()
 
     await replied.reply(
-        f"""🛡 ESCROW APPROVED
+f"""🛡 ESCROW APPROVED
 
-💰 Payment Address:
+💰 Payment Address
 `{admin['wallet']}`
 
-💵 Amount:
-{amount}
+📦 Deal Info: {deal_info}
 
-🆔 Trade ID:
-{trade_id()}
+💵 Amount: {amount}
 
-Buyer: {buyer}
-Seller: {seller}
+⏳ Time: {time}
 
-Please send the payment to the address above."""
+🆔 Trade ID: {trade_id()}
+
+👤 Buyer: {buyer}
+👤 Seller: {seller}
+
+Please send the payment to the address above.
+"""
     )
