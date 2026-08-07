@@ -1,9 +1,10 @@
-from pyrogram import Client, filters
-from database import admins
-
+from config import OWNER_ID
 
 @Client.on_message(filters.command("setadmin"))
 async def set_admin(client, message):
+
+    if message.from_user.id != OWNER_ID:
+        return await message.reply("You are not authorized to use this command.")
 
     if len(message.command) != 4:
         return await message.reply(
@@ -34,40 +35,11 @@ async def set_admin(client, message):
     await message.reply(
         f"""<b>Escrow Settings Saved</b>
 
-<b>Group ID:</b> <code>{message.chat.id}</code>
-
 <b>Admin:</b> {username}
-
 <b>Approve Word:</b> <code>{approve}</code>
 
 <b>Wallet Address:</b>
-
 <pre>{wallet}</pre>
-""",
-        parse_mode="html"
-    )
-
-
-@Client.on_message(filters.command("admin"))
-async def show_admin(client, message):
-
-    data = await admins.find_one({"chat_id": message.chat.id})
-
-    if not data:
-        return await message.reply("No escrow settings found for this group.")
-
-    await message.reply(
-        f"""<b>Escrow Settings</b>
-
-<b>Group ID:</b> <code>{data['chat_id']}</code>
-
-<b>Admin:</b> {data['username']}
-
-<b>Approve Word:</b> <code>{data['approve']}</code>
-
-<b>Wallet Address:</b>
-
-<pre>{data['wallet']}</pre>
 """,
         parse_mode="html"
     )
