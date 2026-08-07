@@ -1,41 +1,42 @@
 from pyrogram import Client, filters
+from pyrogram.enums import ParseMode
+
 from database import admins
 
 
 @Client.on_message(filters.reply & filters.text)
 async def approve_deal(client, message):
 
-    # Get escrow settings for this group
+    replied = message.reply_to_message
+
+    if not replied or not replied.text:
+        return
+
     settings = await admins.find_one({"chat_id": message.chat.id})
 
     if not settings:
         return
 
-    # Must be a reply
-    if not message.reply_to_message:
-        return
+    # Only configured escrow admin
+    username = (message.from_user.username or "").lower()
+    admin_username = settings["username"].replace("@", "").lower()
 
-    # Only configured admin can approve
-    if (message.from_user.username or "").lower() != settings["username"].replace("@", "").lower():
+    if username != admin_username:
         return
 
     # Check approve word
-    if message.text.strip().upper() != settings["approve"].strip().upper():
+    if message.text.strip().upper() != settings["approve"].upper():
         return
 
-    # Reply must contain the deal form
-    if not message.reply_to_message.text:
+    # Reply must be a deal form
+    if "DEAL INFO" not in replied.text.upper():
         return
 
-    if "DEAL INFO" not in message.reply_to_message.text.upper():
-        return
-
-    # Send only wallet address
-    await message.reply(
+    await replied.reply(
         f"""<b>WALLET ADDRESS:</b>
 
 <pre>{settings['wallet']}</pre>
 """,
-        parse_mode="html",
+        parse_mode=ParseMode.HTML,
         quote=True
     )
