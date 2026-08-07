@@ -5,19 +5,23 @@ FORM = """DEAL INFO :
 BUYER :
 SELLER :
 TIME :
-AMOUNT :
+AMOUNT : $
 CONDITIONS :
 """
 
 waiting = set()
 
 
-@Client.on_message(filters.command("dd"))
+@Client.on_message(
+    (filters.command("dd") | filters.regex(r"^(?i)dd$"))
+    & filters.group
+)
 async def create_deal(client, message):
+
     waiting.add(message.from_user.id)
 
     await message.reply(
-        f"<pre>{FORM}</pre>",
+        f"<code>{FORM}</code>",
         parse_mode=ParseMode.HTML,
         quote=True
     )
@@ -35,7 +39,7 @@ async def receive_form(client, message):
     waiting.remove(message.from_user.id)
 
     await message.reply(
-        f"<pre>{message.text}</pre>",
+        f"<code>{message.text}</code>",
         parse_mode=ParseMode.HTML,
         quote=True
     )
