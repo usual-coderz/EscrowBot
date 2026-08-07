@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from database import trades
+from pyrogram.enums import ParseMode
 
 
 @Client.on_message(filters.command("deals"))
@@ -64,6 +65,6 @@ async def deals(client, message):
         text = text[:3900] + "\n..."
 
     await message.reply(
-        text,
-        parse_mode="html"
-    )
+    text,
+    parse_mode=ParseMode.HTML
+)
