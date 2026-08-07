@@ -4,6 +4,7 @@ from pyrogram.enums import ParseMode
 
 from database import admins, trades
 
+from datetime import datetime
 import random
 import string
 
@@ -27,7 +28,6 @@ async def fee_callback(client, callback_query: CallbackQuery):
             "Invalid data",
             show_alert=True
         )
-
 
     try:
         fee_percent = float(data[1])
@@ -58,7 +58,6 @@ async def fee_callback(client, callback_query: CallbackQuery):
         )
 
 
-    # Admin verification
     username = (
         callback_query.from_user.username or ""
     ).lower()
@@ -91,7 +90,7 @@ async def fee_callback(client, callback_query: CallbackQuery):
         )
 
 
-    if not deal_message.text:
+    if not deal_message or not deal_message.text:
         return await callback_query.answer(
             "Invalid deal",
             show_alert=True
@@ -113,7 +112,10 @@ async def fee_callback(client, callback_query: CallbackQuery):
 
     fee_amount = amount * fee_percent / 100
 
+    received_amount = amount + fee_amount
+
     release_amount = amount - fee_amount
+
 
     trade_id = generate_trade_id()
 
@@ -123,33 +125,48 @@ async def fee_callback(client, callback_query: CallbackQuery):
         {
             "trade_id": trade_id,
             "chat_id": chat_id,
+
             "amount": amount,
+
             "fee_percent": fee_percent,
             "fee_amount": fee_amount,
+
+            "received_amount": received_amount,
             "release_amount": release_amount,
-            "buyer": deal.get("BUYER", "-"),
-            "seller": deal.get("SELLER", "-"),
+
+            "buyer": deal.get(
+                "BUYER",
+                "-"
+            ),
+
+            "seller": deal.get(
+                "SELLER",
+                "-"
+            ),
+
             "escrow_admin": settings.get(
                 "username",
                 "-"
             ),
-            "status": "ACTIVE"
+
+            "status": "ACTIVE",
+
+            "created_at": datetime.utcnow()
         }
     )
 
 
-
     await deal_message.reply(
         f"""<emoji id="5974217466270716579">💰</emoji> <b>Deal Amount:</b> ${amount:.2f}
-<emoji id="5897850551156084824">📥</emoji> <b>Received Amount:</b> ${amount + fee_amount:.2f}
+<emoji id="5897850551156084824">📥</emoji> <b>Received Amount:</b> ${received_amount:.2f}
 <emoji id="5888799736508454231">📤</emoji> <b>Release/Refund Amount:</b> ${release_amount:.2f}
 <emoji id="5942826671290715541">🆔</emoji> <b>Trade ID:</b> {trade_id}
 
 <b>Continue the Deal</b>
-Buyer: {deal.get("BUYER","-")}
-Seller: {deal.get("SELLER","-")}
+Buyer: {deal.get("BUYER", "-")}
+Seller: {deal.get("SELLER", "-")}
 
-<emoji id="5931628549088744687">🛡</emoji> Escrowed By: {settings.get("username","-")}
+<emoji id="5931628549088744687">🛡</emoji> <b>Escrowed By:</b> {settings.get("username", "-")}
 """,
         parse_mode=ParseMode.HTML
     )
