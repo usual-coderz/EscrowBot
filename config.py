@@ -1,0 +1,5 @@
+API_ID = 12345678
+API_HASH = "YOUR_API_HASH"
+BOT_TOKEN = "YOUR_BOT_TOKEN"
+
+MONGO_URI = "mongodb://localhost:27017"
