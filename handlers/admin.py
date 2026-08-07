@@ -1,4 +1,7 @@
+from pyrogram import Client, filters
 from config import OWNER_ID
+from database import admins
+
 
 @Client.on_message(filters.command("setadmin"))
 async def set_admin(client, message):
@@ -24,6 +27,7 @@ async def set_admin(client, message):
         {
             "$set": {
                 "chat_id": message.chat.id,
+                "chat_title": message.chat.title,
                 "wallet": wallet,
                 "approve": approve,
                 "username": username
@@ -35,11 +39,89 @@ async def set_admin(client, message):
     await message.reply(
         f"""<b>Escrow Settings Saved</b>
 
+<b>Group:</b> {message.chat.title}
+<b>Chat ID:</b> <code>{message.chat.id}</code>
+
 <b>Admin:</b> {username}
 <b>Approve Word:</b> <code>{approve}</code>
 
 <b>Wallet Address:</b>
+
 <pre>{wallet}</pre>
 """,
         parse_mode="html"
     )
+
+
+@Client.on_message(filters.command("admin"))
+async def show_admin(client, message):
+
+    data = await admins.find_one({"chat_id": message.chat.id})
+
+    if not data:
+        return await message.reply("No escrow settings found for this group.")
+
+    await message.reply(
+        f"""<b>Escrow Settings</b>
+
+<b>Group:</b> {data.get("chat_title","Unknown")}
+<b>Chat ID:</b> <code>{data['chat_id']}</code>
+
+<b>Admin:</b> {data['username']}
+<b>Approve Word:</b> <code>{data['approve']}</code>
+
+<b>Wallet Address:</b>
+
+<pre>{data['wallet']}</pre>
+""",
+        parse_mode="html"
+    )
+
+
+@Client.on_message(filters.command("admins"))
+async def list_admins(client, message):
+
+    if message.from_user.id != OWNER_ID:
+        return await message.reply("You are not authorized.")
+
+    text = "<b>Escrow Groups</b>\n\n"
+
+    count = 0
+
+    async for data in admins.find():
+        count += 1
+        text += (
+            f"<b>{count}.</b> {data.get('chat_title','Unknown')}\n"
+            f"<b>Chat ID:</b> <code>{data['chat_id']}</code>\n"
+            f"<b>Admin:</b> {data['username']}\n"
+            f"<b>Approve:</b> <code>{data['approve']}</code>\n\n"
+        )
+
+    if count == 0:
+        text += "No groups found."
+
+    await message.reply(text, parse_mode="html")
+
+
+@Client.on_message(filters.command("deladmin"))
+async def del_admin(client, message):
+
+    if message.from_user.id != OWNER_ID:
+        return await message.reply("You are not authorized.")
+
+    if len(message.command) != 2:
+        return await message.reply(
+            "Usage:\n/deladmin <chat_id>"
+        )
+
+    try:
+        chat_id = int(message.command[1])
+    except ValueError:
+        return await message.reply("Invalid Chat ID.")
+
+    result = await admins.delete_one({"chat_id": chat_id})
+
+    if result.deleted_count:
+        await message.reply("Escrow settings deleted successfully.")
+    else:
+        await message.reply("No settings found for that Chat ID.")
