@@ -1,4 +1,5 @@
 from pyrogram import Client, filters
+from pyrogram.enums import ParseMode
 
 from database import admins, trades
 
@@ -56,18 +57,22 @@ async def release_trade(client, message):
         }
     )
 
+    amount = trade.get("release_amount", 0)
+
     await message.reply(
-        f"""Deal Released
+        f"""<b>Deal Released</b>
 
-Trade ID: {trade_id}
+<b>Trade ID:</b> <code>{trade_id}</code>
 
-Amount: ${trade['release_amount']:.2f}
+<b>Amount:</b> ${amount:.2f}
 
-Buyer: {trade.get('buyer','-')}
-Seller: {trade.get('seller','-')}
+<b>Buyer:</b> {trade.get("buyer", "-")}
+<b>Seller:</b> {trade.get("seller", "-")}
 
-Status: RELEASED
+<b>Status:</b> RELEASED
 
-Escrowed By: {settings['username']}
-"""
+<b>Escrowed By:</b> {settings.get("username", "-")}
+
+<code>Vouch @stocknfts for ${amount:.2f} smooth and trusted deal.</code>""",
+        parse_mode=ParseMode.HTML
     )
